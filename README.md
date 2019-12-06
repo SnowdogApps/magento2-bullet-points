@@ -5,7 +5,7 @@ Extension which collects and display attributes as bullet points
 ### 1. Installation:
 
 * `composer require snowdog/module-bullet-points`
-* `bin/magento module:enable Snowdog_CmsApi`
+* `bin/magento module:enable Snowdog_BulletPoints`
 * `bin/magento setup:upgrade`
 
 ### 2. Usage
