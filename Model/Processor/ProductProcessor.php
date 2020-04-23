@@ -5,6 +5,10 @@ namespace Snowdog\BulletPoints\Model\Processor;
 
 use Magento\Framework\App\ResourceConnection;
 use Magento\Catalog\Api\ProductRepositoryInterface;
+use Magento\Catalog\Api\Data\ProductInterface;
+use Magento\Framework\Exception\CouldNotSaveException;
+use Magento\Framework\Exception\InputException;
+use Magento\Framework\Exception\StateException;
 use Magento\Framework\DB\Select;
 
 class ProductProcessor extends AbstractProcessor
@@ -77,11 +81,11 @@ class ProductProcessor extends AbstractProcessor
     }
 
     /**
-     * @param \Magento\Catalog\Api\Data\ProductInterface $product
+     * @param ProductInterface $product
      * @param string $attributeValue
-     * @throws \Magento\Framework\Exception\CouldNotSaveException
-     * @throws \Magento\Framework\Exception\InputException
-     * @throws \Magento\Framework\Exception\StateException
+     * @throws CouldNotSaveException
+     * @throws InputException
+     * @throws StateException
      */
     public function updateProductAttributeValue($product, $attributeValue): void
     {

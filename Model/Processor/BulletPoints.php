@@ -4,6 +4,8 @@ declare(strict_types=1);
 namespace Snowdog\BulletPoints\Model\Processor;
 
 use Magento\Catalog\Api\ProductRepositoryInterface;
+use Magento\Catalog\Api\Data\ProductInterface;
+use Magento\Framework\Exception\NoSuchEntityException;
 
 class BulletPoints
 {
@@ -73,7 +75,12 @@ class BulletPoints
         ];
     }
 
-    private function getProduct($productId)
+    /**
+     * @param int $productId
+     * @return ProductInterface
+     * @throws NoSuchEntityException
+     */
+    private function getProduct($productId): ProductInterface
     {
         return $this->productRepository->getById($productId);
     }
