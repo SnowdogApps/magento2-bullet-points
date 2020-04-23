@@ -71,62 +71,11 @@ class BulletPoints
             'errors' => $errors,
             'success' => []
         ];
-
-//        $productAttributesData = $this->productProcessor->getProductAttributesData($productIds, $attributes);
-//        $productAttributesDataWithHtmlList = $this->getDataWithHtmlList($productAttributesData, $attributes);
-
-//        $this->updateProductAttributeValue($productAttributesDataWithHtmlList);
     }
 
     private function getProduct($productId)
     {
         return $this->productRepository->getById($productId);
-    }
-
-    /**
-     * @param array $productAttributesData
-     * @return void
-     */
-    private function updateProductAttributeValue($productAttributesData): void
-    {
-        if (!empty($productAttributesData)) {
-            foreach ($productAttributesData as $data) {
-                $this->productProcessor->updateProductAttributeValue($data['product_id'], $data['html']);
-            }
-        }
-    }
-
-    /**
-     * @param array $productAttributesData
-     * @param array $attributes
-     * @return array
-     */
-    private function getDataWithHtmlList($productAttributesData, $attributes): array
-    {
-        if (empty($productAttributesData)) {
-            return $productAttributesData;
-        }
-
-        foreach ($productAttributesData as $key => $attributesData) {
-            $data = [];
-            foreach ($attributes as $attribute) {
-                if (!isset($attributesData[$attribute['attribute_code']])
-                    || is_null($attributesData[$attribute['attribute_code']])
-                ) {
-                    continue;
-                }
-
-                $data[] = [
-                    'label' => $attribute['frontend_label'],
-                    'value' => $attributesData[$attribute['attribute_code']],
-                ];
-            }
-
-            $attributesData['html'] = $this->generateHtmlList($data);
-            $productAttributesData[$key] = $attributesData;
-        }
-
-        return $productAttributesData;
     }
 
     /**

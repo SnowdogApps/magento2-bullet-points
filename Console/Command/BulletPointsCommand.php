@@ -124,6 +124,10 @@ class BulletPointsCommand extends Command
                 );
             }
         }
+
+        $output->writeln(
+            '<info>Bullet Points update finished.</info>'
+        );
     }
 
     /**

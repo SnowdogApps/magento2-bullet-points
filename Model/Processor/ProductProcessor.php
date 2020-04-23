@@ -62,39 +62,6 @@ class ProductProcessor extends AbstractProcessor
         ];
     }
 
-    /**
-     * @param array $productIds
-     * @param array $attributes
-     * @param int $storeId
-     * @return array
-     */
-    public function _getProductAttributesData($productIds, $attributes, $storeId = 0): array
-    {
-        $select = $this->getConnection()->select()->from(
-            ['main_table' => $this->getResourceConnection()->getTableName('catalog_product_entity')],
-            ['product_id' => 'entity_id', 'sku']
-        )->where(
-            'main_table.entity_id IN (?)',
-            $productIds
-        );
-
-        foreach ($attributes as $attribute) {
-            if ($attribute['backend_type'] === 'static') {
-                continue;
-            }
-
-            $this->addAttributeToSelect(
-                $select,
-                $storeId,
-                $attribute['attribute_id'],
-                $attribute['attribute_code'],
-                $attribute['backend_type']
-            );
-        }
-
-        return $this->getConnection()->fetchAssoc($select);
-    }
-
     public function getProductAttributesData($product, $attributes)
     {
         $data = [];
@@ -107,18 +74,6 @@ class ProductProcessor extends AbstractProcessor
         }
 
         return $data;
-    }
-
-    /**
-     * @param int $productId
-     * @param mixed $attributeValue
-     * @return void
-     */
-    public function _updateProductAttributeValue($productId, $attributeValue): void
-    {
-        $product = $this->productRepository->getById($productId);
-        $product->setData('selling_features_bullets', $attributeValue);
-        $this->productRepository->save($product);
     }
 
     /**
