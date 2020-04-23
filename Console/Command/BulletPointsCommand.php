@@ -77,6 +77,7 @@ class BulletPointsCommand extends Command
 
     /**
      * {@inheritdoc}
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {

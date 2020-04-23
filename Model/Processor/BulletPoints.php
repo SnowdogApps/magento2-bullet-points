@@ -107,6 +107,6 @@ class BulletPoints
             return '';
         }
 
-        return '<dl>'. $html . '</dl>';
+        return '<dl>' . $html . '</dl>';
     }
 }

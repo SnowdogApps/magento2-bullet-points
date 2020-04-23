@@ -21,8 +21,7 @@ class ProductProcessor extends AbstractProcessor
     public function __construct(
         ResourceConnection $resourceConnection,
         ProductRepositoryInterface $productRepository
-    )
-    {
+    ) {
         $this->productRepository = $productRepository;
 
         parent::__construct($resourceConnection);
@@ -91,61 +90,5 @@ class ProductProcessor extends AbstractProcessor
     {
         $product->setData('selling_features_bullets', $attributeValue);
         $this->productRepository->save($product);
-    }
-
-    /**
-     * @param Select $select
-     * @param int $storeId
-     * @param int $attributeId
-     * @param string $attributeCode
-     * @param string $backendType
-     * @return void
-     */
-    private function addAttributeToSelect(Select $select, $storeId, $attributeId, $attributeCode, $backendType): void
-    {
-        $defTableName = 'def_' . $attributeCode . '_table';
-        $storeTableName = 'store_' . $attributeCode . '_table';
-
-        $select->joinLeft(
-            [$defTableName => $this->getResourceConnection()->getTableName('catalog_product_entity_' . $backendType)],
-            implode(
-                ' AND ',
-                [
-                    "main_table.entity_id = " . $defTableName . ".entity_id",
-                    $this->getConnection()->quoteInto(
-                        $defTableName . ".attribute_id = ?",
-                        $attributeId
-                    ),
-                    $defTableName . ".store_id = 0"
-                ]
-            ),
-            []
-        );
-        $select->joinLeft(
-            [$storeTableName => $this->getResourceConnection()->getTableName('catalog_product_entity_varchar')],
-            implode(
-                ' AND ',
-                [
-                    "main_table.entity_id = " . $storeTableName . ".entity_id",
-                    $this->getConnection()->quoteInto(
-                        $storeTableName . ".attribute_id = ?",
-                        $attributeId
-                    ),
-                    $this->getConnection()->quoteInto(
-                        $storeTableName . ".store_id = ?",
-                        $storeId
-                    ),
-                ]
-            ),
-            []
-        );
-
-        $imageValueExpr = $this->getConnection()->getCheckSql(
-            $storeTableName . '.value_id IS NULL',
-            $defTableName . '.value',
-            $storeTableName . '.value'
-        );
-
-        $select->columns([$attributeCode => $imageValueExpr]);
     }
 }
