@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace Snowdog\BulletPoints\Model\Processor;
 
+use Magento\Catalog\Api\ProductRepositoryInterface;
+
 class BulletPoints
 {
     /**
@@ -20,32 +22,65 @@ class BulletPoints
      */
     private $attributeProcessor;
 
+    /**
+     * @var ProductRepositoryInterface
+     */
+    private $productRepository;
+
     public function __construct(
         CategoryProcessor $categoryProcessor,
         ProductProcessor $productProcessor,
-        AttributeProcessor $attributeProcessor
+        AttributeProcessor $attributeProcessor,
+        ProductRepositoryInterface $productRepository
     ) {
         $this->categoryProcessor = $categoryProcessor;
         $this->productProcessor = $productProcessor;
         $this->attributeProcessor = $attributeProcessor;
+        $this->productRepository = $productRepository;
     }
 
     /**
      * @param array $attributeIds
      * @param array $categoryIds
      * @param array $skus
-     * @return void
+     * @return array
      */
-    public function execute($attributeIds, $categoryIds = [], $skus = []): void
+    public function execute($attributeIds, $categoryIds = [], $skus = []): array
     {
         $categoryIds = $this->categoryProcessor->getCategories($categoryIds);
         $productIdsArray = $this->productProcessor->getProductsIds($categoryIds, $skus);
         $productIds = $productIdsArray['product_ids'];
         $attributes = $this->attributeProcessor->getAttributesData($attributeIds);
-        $productAttributesData = $this->productProcessor->getProductAttributesData($productIds, $attributes);
-        $productAttributesDataWithHtmlList = $this->getDataWithHtmlList($productAttributesData, $attributes);
 
-        $this->updateProductAttributeValue($productAttributesDataWithHtmlList);
+        $errors = [];
+        foreach ($productIds as $productId) {
+            try {
+                $product = $this->getProduct($productId);
+                $productAttributesData = $this->productProcessor->getProductAttributesData($product, $attributes);
+                $html = $this->generateHtmlList($productAttributesData);
+                if (!empty($html)) {
+                    $this->productProcessor->updateProductAttributeValue($product, $html);
+                }
+            } catch (\Exception $exception) {
+                $errors[$productId] =  'Data was not updated for SKU: ' . $product->getSku()
+                    . '. Error message: ' . $exception->getMessage();
+            }
+        }
+
+        return [
+            'errors' => $errors,
+            'success' => []
+        ];
+
+//        $productAttributesData = $this->productProcessor->getProductAttributesData($productIds, $attributes);
+//        $productAttributesDataWithHtmlList = $this->getDataWithHtmlList($productAttributesData, $attributes);
+
+//        $this->updateProductAttributeValue($productAttributesDataWithHtmlList);
+    }
+
+    private function getProduct($productId)
+    {
+        return $this->productRepository->getById($productId);
     }
 
     /**
@@ -100,12 +135,22 @@ class BulletPoints
      */
     private function generateHtmlList($data): string
     {
-        $html = '<dl>';
+        if (empty($data)) {
+            return '';
+        }
+
+        $html = '';
         foreach ($data as $value) {
+            if (empty($value['value'])) {
+                continue;
+            }
             $html .= '<dt>' . $value['label'] . '</dt><dd>' . $value['value'] . '</dd>';
         }
-        $html .= '</dl>';
 
-        return $html;
+        if (empty($html)) {
+            return '';
+        }
+
+        return '<dl>'. $html . '</dl>';
     }
 }

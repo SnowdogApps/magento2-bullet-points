@@ -17,9 +17,10 @@ class ProductProcessor extends AbstractProcessor
     public function __construct(
         ResourceConnection $resourceConnection,
         ProductRepositoryInterface $productRepository
-    ) {
+    )
+    {
         $this->productRepository = $productRepository;
-        
+
         parent::__construct($resourceConnection);
     }
 
@@ -67,7 +68,7 @@ class ProductProcessor extends AbstractProcessor
      * @param int $storeId
      * @return array
      */
-    public function getProductAttributesData($productIds, $attributes, $storeId = 0): array
+    public function _getProductAttributesData($productIds, $attributes, $storeId = 0): array
     {
         $select = $this->getConnection()->select()->from(
             ['main_table' => $this->getResourceConnection()->getTableName('catalog_product_entity')],
@@ -81,7 +82,7 @@ class ProductProcessor extends AbstractProcessor
             if ($attribute['backend_type'] === 'static') {
                 continue;
             }
-            
+
             $this->addAttributeToSelect(
                 $select,
                 $storeId,
@@ -94,14 +95,41 @@ class ProductProcessor extends AbstractProcessor
         return $this->getConnection()->fetchAssoc($select);
     }
 
+    public function getProductAttributesData($product, $attributes)
+    {
+        $data = [];
+        foreach ($attributes as $attribute) {
+            $attributeFrontend = $product->getResource()->getAttribute($attribute['attribute_code'])->getFrontend();
+            $data[] = [
+                'label' => $attributeFrontend->getLabel(),
+                'value' => $attributeFrontend->getValue($product)
+            ];
+        }
+
+        return $data;
+    }
+
     /**
      * @param int $productId
      * @param mixed $attributeValue
      * @return void
      */
-    public function updateProductAttributeValue($productId, $attributeValue): void
+    public function _updateProductAttributeValue($productId, $attributeValue): void
     {
         $product = $this->productRepository->getById($productId);
+        $product->setData('selling_features_bullets', $attributeValue);
+        $this->productRepository->save($product);
+    }
+
+    /**
+     * @param \Magento\Catalog\Api\Data\ProductInterface $product
+     * @param string $attributeValue
+     * @throws \Magento\Framework\Exception\CouldNotSaveException
+     * @throws \Magento\Framework\Exception\InputException
+     * @throws \Magento\Framework\Exception\StateException
+     */
+    public function updateProductAttributeValue($product, $attributeValue): void
+    {
         $product->setData('selling_features_bullets', $attributeValue);
         $this->productRepository->save($product);
     }
