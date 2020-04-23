@@ -65,7 +65,12 @@ class ProductProcessor extends AbstractProcessor
         ];
     }
 
-    public function getProductAttributesData($product, $attributes)
+    /**
+     * @param ProductInterface $product
+     * @param array $attributes
+     * @return array
+     */
+    public function getProductAttributesData($product, $attributes): array
     {
         $data = [];
         foreach ($attributes as $attribute) {
