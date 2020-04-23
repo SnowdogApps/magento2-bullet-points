@@ -13,6 +13,7 @@ use Magento\Framework\App\State;
 use Magento\Store\Model\StoreManagerInterface;
 use Magento\Framework\App\Area;
 use Magento\Store\Model\Store;
+use InvalidArgumentException;
 
 class BulletPointsCommand extends Command
 {
@@ -96,7 +97,7 @@ class BulletPointsCommand extends Command
         }
 
         if (is_null($attributeIds) || count($attributeIdsArray) == 0) {
-            throw new \InvalidArgumentException(
+            throw new InvalidArgumentException(
                 'Argument ' . self::ARGUMENT_ATTRIBUTE_IDS . ' is missing or it is empty.'
             );
         }
