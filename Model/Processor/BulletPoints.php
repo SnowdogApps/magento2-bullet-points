@@ -98,7 +98,7 @@ class BulletPoints
 
         $html = '';
         foreach ($attributeIds as $attributeId) {
-            if (empty($data[$attributeId]) || empty($data[$attributeId]['value'])) {
+            if (empty($data[$attributeId]['value'])) {
                 continue;
             }
             $attribute = $data[$attributeId];
