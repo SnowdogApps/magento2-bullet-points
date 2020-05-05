@@ -59,7 +59,7 @@ class BulletPoints
             try {
                 $product = $this->getProduct($productId);
                 $productAttributesData = $this->productProcessor->getProductAttributesData($product, $attributes);
-                $html = $this->generateHtmlList($productAttributesData);
+                $html = $this->generateHtmlList($productAttributesData, $attributeIds);
                 if (!empty($html)) {
                     $this->productProcessor->updateProductAttributeValue($product, $html);
                 }
@@ -87,20 +87,31 @@ class BulletPoints
 
     /**
      * @param array $data
+     * @param array $attributeIds
      * @return string
      */
-    private function generateHtmlList($data): string
+    private function generateHtmlList(array $data, array $attributeIds): string
     {
-        if (empty($data)) {
+        if (empty($data) || empty($attributeIds)) {
             return '';
         }
 
         $html = '';
-        foreach ($data as $value) {
-            if (empty($value['value'])) {
+        foreach ($attributeIds as $attributeId) {
+            if (empty($data[$attributeId]) || empty($data[$attributeId]['value'])) {
                 continue;
             }
-            $html .= '<dt>' . $value['label'] . '</dt><dd>' . $value['value'] . '</dd>';
+            $attribute = $data[$attributeId];
+            $html .= '<dt class="'
+                . $attribute['code'] . '_label'
+                . '">'
+                . $attribute['label']
+                . '</dt>'
+                . '<dd class="'
+                . $attribute['code'] . '_value'
+                . '">'
+                . $attribute['value']
+                . '</dd>';
         }
 
         if (empty($html)) {

@@ -75,7 +75,8 @@ class ProductProcessor extends AbstractProcessor
         $data = [];
         foreach ($attributes as $attribute) {
             $attributeFrontend = $product->getResource()->getAttribute($attribute['attribute_code'])->getFrontend();
-            $data[] = [
+            $data[$attribute['attribute_id']] = [
+                'code' => $attribute['attribute_code'],
                 'label' => $attributeFrontend->getLabel(),
                 'value' => $attributeFrontend->getValue($product)
             ];
