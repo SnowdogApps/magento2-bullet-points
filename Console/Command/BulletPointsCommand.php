@@ -13,6 +13,7 @@ use Magento\Framework\App\State;
 use Magento\Store\Model\StoreManagerInterface;
 use Magento\Framework\App\Area;
 use Magento\Store\Model\Store;
+use InvalidArgumentException;
 
 class BulletPointsCommand extends Command
 {
@@ -77,6 +78,7 @@ class BulletPointsCommand extends Command
 
     /**
      * {@inheritdoc}
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
@@ -88,11 +90,14 @@ class BulletPointsCommand extends Command
         $attributeIds = $input->getArgument(self::ARGUMENT_ATTRIBUTE_IDS);
         $attributeIdsArray = $this->parseAndFilter($attributeIds);
         $skus = $input->getArgument(self::ARGUMENT_SKUS);
-        $skusArray = explode(',', $skus);
-        $skusArray = array_filter($skusArray);
+        $skusArray = [];
+        if (!empty($skus)) {
+            $skusArray = explode(',', $skus);
+            $skusArray = array_filter($skusArray);
+        }
 
         if (is_null($attributeIds) || count($attributeIdsArray) == 0) {
-            throw new \InvalidArgumentException(
+            throw new InvalidArgumentException(
                 'Argument ' . self::ARGUMENT_ATTRIBUTE_IDS . ' is missing or it is empty.'
             );
         }
@@ -113,7 +118,18 @@ class BulletPointsCommand extends Command
             );
         }
 
-        $this->bulletPoints->execute($attributeIdsArray, $categoryIdsArray, $skusArray);
+        $result = $this->bulletPoints->execute($attributeIdsArray, $categoryIdsArray, $skusArray);
+        if (!empty($result['errors'])) {
+            foreach ($result['errors'] as $error) {
+                $output->writeln(
+                    '<info>' . $error . '</info>'
+                );
+            }
+        }
+
+        $output->writeln(
+            '<info>Bullet Points update finished.</info>'
+        );
     }
 
     /**

@@ -5,6 +5,10 @@ namespace Snowdog\BulletPoints\Model\Processor;
 
 use Magento\Framework\App\ResourceConnection;
 use Magento\Catalog\Api\ProductRepositoryInterface;
+use Magento\Catalog\Api\Data\ProductInterface;
+use Magento\Framework\Exception\CouldNotSaveException;
+use Magento\Framework\Exception\InputException;
+use Magento\Framework\Exception\StateException;
 use Magento\Framework\DB\Select;
 
 class ProductProcessor extends AbstractProcessor
@@ -19,7 +23,7 @@ class ProductProcessor extends AbstractProcessor
         ProductRepositoryInterface $productRepository
     ) {
         $this->productRepository = $productRepository;
-        
+
         parent::__construct($resourceConnection);
     }
 
@@ -62,103 +66,35 @@ class ProductProcessor extends AbstractProcessor
     }
 
     /**
-     * @param array $productIds
+     * @param ProductInterface $product
      * @param array $attributes
-     * @param int $storeId
      * @return array
      */
-    public function getProductAttributesData($productIds, $attributes, $storeId = 0): array
+    public function getProductAttributesData($product, $attributes): array
     {
-        $select = $this->getConnection()->select()->from(
-            ['main_table' => $this->getResourceConnection()->getTableName('catalog_product_entity')],
-            ['product_id' => 'entity_id', 'sku']
-        )->where(
-            'main_table.entity_id IN (?)',
-            $productIds
-        );
-
+        $data = [];
         foreach ($attributes as $attribute) {
-            if ($attribute['backend_type'] === 'static') {
-                continue;
-            }
-            
-            $this->addAttributeToSelect(
-                $select,
-                $storeId,
-                $attribute['attribute_id'],
-                $attribute['attribute_code'],
-                $attribute['backend_type']
-            );
+            $attributeFrontend = $product->getResource()->getAttribute($attribute['attribute_code'])->getFrontend();
+            $data[$attribute['attribute_id']] = [
+                'code' => $attribute['attribute_code'],
+                'label' => $attributeFrontend->getLabel(),
+                'value' => $attributeFrontend->getValue($product)
+            ];
         }
 
-        return $this->getConnection()->fetchAssoc($select);
+        return $data;
     }
 
     /**
-     * @param int $productId
-     * @param mixed $attributeValue
-     * @return void
+     * @param ProductInterface $product
+     * @param string $attributeValue
+     * @throws CouldNotSaveException
+     * @throws InputException
+     * @throws StateException
      */
-    public function updateProductAttributeValue($productId, $attributeValue): void
+    public function updateProductAttributeValue($product, $attributeValue): void
     {
-        $product = $this->productRepository->getById($productId);
         $product->setData('selling_features_bullets', $attributeValue);
         $this->productRepository->save($product);
-    }
-
-    /**
-     * @param Select $select
-     * @param int $storeId
-     * @param int $attributeId
-     * @param string $attributeCode
-     * @param string $backendType
-     * @return void
-     */
-    private function addAttributeToSelect(Select $select, $storeId, $attributeId, $attributeCode, $backendType): void
-    {
-        $defTableName = 'def_' . $attributeCode . '_table';
-        $storeTableName = 'store_' . $attributeCode . '_table';
-
-        $select->joinLeft(
-            [$defTableName => $this->getResourceConnection()->getTableName('catalog_product_entity_' . $backendType)],
-            implode(
-                ' AND ',
-                [
-                    "main_table.entity_id = " . $defTableName . ".entity_id",
-                    $this->getConnection()->quoteInto(
-                        $defTableName . ".attribute_id = ?",
-                        $attributeId
-                    ),
-                    $defTableName . ".store_id = 0"
-                ]
-            ),
-            []
-        );
-        $select->joinLeft(
-            [$storeTableName => $this->getResourceConnection()->getTableName('catalog_product_entity_varchar')],
-            implode(
-                ' AND ',
-                [
-                    "main_table.entity_id = " . $storeTableName . ".entity_id",
-                    $this->getConnection()->quoteInto(
-                        $storeTableName . ".attribute_id = ?",
-                        $attributeId
-                    ),
-                    $this->getConnection()->quoteInto(
-                        $storeTableName . ".store_id = ?",
-                        $storeId
-                    ),
-                ]
-            ),
-            []
-        );
-
-        $imageValueExpr = $this->getConnection()->getCheckSql(
-            $storeTableName . '.value_id IS NULL',
-            $defTableName . '.value',
-            $storeTableName . '.value'
-        );
-
-        $select->columns([$attributeCode => $imageValueExpr]);
     }
 }

@@ -3,6 +3,10 @@ declare(strict_types=1);
 
 namespace Snowdog\BulletPoints\Model\Processor;
 
+use Magento\Catalog\Api\ProductRepositoryInterface;
+use Magento\Catalog\Api\Data\ProductInterface;
+use Magento\Framework\Exception\NoSuchEntityException;
+
 class BulletPoints
 {
     /**
@@ -20,92 +24,100 @@ class BulletPoints
      */
     private $attributeProcessor;
 
+    /**
+     * @var ProductRepositoryInterface
+     */
+    private $productRepository;
+
     public function __construct(
         CategoryProcessor $categoryProcessor,
         ProductProcessor $productProcessor,
-        AttributeProcessor $attributeProcessor
+        AttributeProcessor $attributeProcessor,
+        ProductRepositoryInterface $productRepository
     ) {
         $this->categoryProcessor = $categoryProcessor;
         $this->productProcessor = $productProcessor;
         $this->attributeProcessor = $attributeProcessor;
+        $this->productRepository = $productRepository;
     }
 
     /**
      * @param array $attributeIds
      * @param array $categoryIds
      * @param array $skus
-     * @return void
+     * @return array
      */
-    public function execute($attributeIds, $categoryIds = [], $skus = []): void
+    public function execute($attributeIds, $categoryIds = [], $skus = []): array
     {
         $categoryIds = $this->categoryProcessor->getCategories($categoryIds);
         $productIdsArray = $this->productProcessor->getProductsIds($categoryIds, $skus);
         $productIds = $productIdsArray['product_ids'];
         $attributes = $this->attributeProcessor->getAttributesData($attributeIds);
-        $productAttributesData = $this->productProcessor->getProductAttributesData($productIds, $attributes);
-        $productAttributesDataWithHtmlList = $this->getDataWithHtmlList($productAttributesData, $attributes);
 
-        $this->updateProductAttributeValue($productAttributesDataWithHtmlList);
-    }
-
-    /**
-     * @param array $productAttributesData
-     * @return void
-     */
-    private function updateProductAttributeValue($productAttributesData): void
-    {
-        if (!empty($productAttributesData)) {
-            foreach ($productAttributesData as $data) {
-                $this->productProcessor->updateProductAttributeValue($data['product_id'], $data['html']);
-            }
-        }
-    }
-
-    /**
-     * @param array $productAttributesData
-     * @param array $attributes
-     * @return array
-     */
-    private function getDataWithHtmlList($productAttributesData, $attributes): array
-    {
-        if (empty($productAttributesData)) {
-            return $productAttributesData;
-        }
-
-        foreach ($productAttributesData as $key => $attributesData) {
-            $data = [];
-            foreach ($attributes as $attribute) {
-                if (!isset($attributesData[$attribute['attribute_code']])
-                    || is_null($attributesData[$attribute['attribute_code']])
-                ) {
-                    continue;
+        $errors = [];
+        foreach ($productIds as $productId) {
+            try {
+                $product = $this->getProduct($productId);
+                $productAttributesData = $this->productProcessor->getProductAttributesData($product, $attributes);
+                $html = $this->generateHtmlList($productAttributesData, $attributeIds);
+                if (!empty($html)) {
+                    $this->productProcessor->updateProductAttributeValue($product, $html);
                 }
-
-                $data[] = [
-                    'label' => $attribute['frontend_label'],
-                    'value' => $attributesData[$attribute['attribute_code']],
-                ];
+            } catch (\Exception $exception) {
+                $errors[$productId] =  'Data was not updated for SKU: ' . $product->getSku()
+                    . '. Error message: ' . $exception->getMessage();
             }
-
-            $attributesData['html'] = $this->generateHtmlList($data);
-            $productAttributesData[$key] = $attributesData;
         }
 
-        return $productAttributesData;
+        return [
+            'errors' => $errors,
+            'success' => []
+        ];
+    }
+
+    /**
+     * @param int $productId
+     * @return ProductInterface
+     * @throws NoSuchEntityException
+     */
+    private function getProduct($productId): ProductInterface
+    {
+        return $this->productRepository->getById($productId);
     }
 
     /**
      * @param array $data
+     * @param array $attributeIds
      * @return string
      */
-    private function generateHtmlList($data): string
+    private function generateHtmlList(array $data, array $attributeIds): string
     {
-        $html = '<dl>';
-        foreach ($data as $value) {
-            $html .= '<dt>' . $value['label'] . '</dt><dd>' . $value['value'] . '</dd>';
+        if (empty($data) || empty($attributeIds)) {
+            return '';
         }
-        $html .= '</dl>';
 
-        return $html;
+        $html = '';
+        foreach ($attributeIds as $attributeId) {
+            if (empty($data[$attributeId]['value'])) {
+                continue;
+            }
+            $attribute = $data[$attributeId];
+            $html .= '<dt class="'
+                . $attribute['code'] . '_label'
+                . '">'
+                . $attribute['label']
+                . '</dt>'
+                . '<dd class="'
+                . $attribute['code'] . '_value'
+                . '">'
+                . $attribute['value']
+                . '</dd>';
+        }
+
+        if (empty($html)) {
+            return '';
+        }
+
+        return '<dl>' . $html . '</dl>';
     }
 }
