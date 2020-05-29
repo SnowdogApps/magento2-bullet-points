@@ -1,4 +1,0 @@
-php:
-    image: phpci:7.2
-    script:
-        - all.sh magento2
