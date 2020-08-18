@@ -1,6 +1,7 @@
 # CHANGELOG
 
 ## [Unreleased]
+- 70052: Apply HTML escape to bullet points processor generated HTML list product attributes data.
 
 ## [1.1.1] 2020-05-20
 - Removed unused files
