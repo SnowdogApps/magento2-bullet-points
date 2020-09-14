@@ -114,12 +114,12 @@ class BulletPoints
             $html .= '<dt class="'
                 . $attributeCode . '_label'
                 . '">'
-                . $this->escaper->escapeHtml($attribute['label'])
+                . $attribute['label']
                 . '</dt>'
                 . '<dd class="'
                 . $attributeCode . '_value'
                 . '">'
-                . $this->escaper->escapeHtml($attribute['value'])
+                . $attribute['value']
                 . '</dd>';
         }
 
