@@ -6,6 +6,7 @@ namespace Snowdog\BulletPoints\Model\Processor;
 use Magento\Catalog\Api\ProductRepositoryInterface;
 use Magento\Catalog\Api\Data\ProductInterface;
 use Magento\Framework\Exception\NoSuchEntityException;
+use Magento\Framework\Escaper;
 
 class BulletPoints
 {
@@ -29,16 +30,23 @@ class BulletPoints
      */
     private $productRepository;
 
+    /**
+     * @var Escaper
+     */
+    private $escaper;
+
     public function __construct(
         CategoryProcessor $categoryProcessor,
         ProductProcessor $productProcessor,
         AttributeProcessor $attributeProcessor,
-        ProductRepositoryInterface $productRepository
+        ProductRepositoryInterface $productRepository,
+        Escaper $escaper
     ) {
         $this->categoryProcessor = $categoryProcessor;
         $this->productProcessor = $productProcessor;
         $this->attributeProcessor = $attributeProcessor;
         $this->productRepository = $productRepository;
+        $this->escaper = $escaper;
     }
 
     /**
@@ -102,13 +110,14 @@ class BulletPoints
                 continue;
             }
             $attribute = $data[$attributeId];
+            $attributeCode = $this->escaper->escapeHtmlAttr($attribute['code']);
             $html .= '<dt class="'
-                . $attribute['code'] . '_label'
+                . $attributeCode . '_label'
                 . '">'
                 . $attribute['label']
                 . '</dt>'
                 . '<dd class="'
-                . $attribute['code'] . '_value'
+                . $attributeCode . '_value'
                 . '">'
                 . $attribute['value']
                 . '</dd>';
