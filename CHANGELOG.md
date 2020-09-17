@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+## [1.1.2] 2020-09-17
+- 70052: Apply HTML escape to bullet points processor generated HTML list product attribute code value.
+
 ## [1.1.1] 2020-05-20
 - Removed unused files
 
